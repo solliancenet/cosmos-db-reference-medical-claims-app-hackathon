@@ -5,9 +5,9 @@ Param(
     [parameter(Mandatory=$true)][string]$location,
     [parameter(Mandatory=$true)][string]$subscription,
     [parameter(Mandatory=$false)][string]$template="main.bicep",
-    [parameter(Mandatory=$false)][string]$openAiName,
-    [parameter(Mandatory=$false)][string]$openAiRg,
-    [parameter(Mandatory=$false)][string]$openAiDeployment,
+    [parameter(Mandatory=$false)][string]$openAiName=$null,
+    [parameter(Mandatory=$false)][string]$openAiRg=$null,
+    [parameter(Mandatory=$false)][string]$openAiDeployment="completions",
     [parameter(Mandatory=$false)][string]$suffix,
     [parameter(Mandatory=$false)][string]$synapseWorkspace,
     [parameter(Mandatory=$false)][bool]$stepDeployBicep=$true,
@@ -42,6 +42,11 @@ if ($stepLoginAzure) {
 
 az account set --subscription $subscription
 
+$rg = $(az group show -g $resourceGroup -o json | ConvertFrom-Json)
+if (-not $rg) {
+    $rg=$(az group create -g $resourceGroup -l $location --subscription $subscription)
+}
+
 if ($stepDeployOpenAi) {
     if (-not $openAiName) {
         $openAiName="openai-$suffix"
@@ -51,7 +56,7 @@ if ($stepDeployOpenAi) {
         $openAiRg=$resourceGroup
     }
 
-    & ./Deploy-OpenAi.ps1 -name $openAiName -resourceGroup $openAiRg -location $location -suffix $suffix -deployment $openAiDeployment
+    & ./Deploy-OpenAi.ps1 -name $openAiName -resourceGroup $openAiRg -location $location -deployment $openAiDeployment
 }
 
 if ($stepDeployBicep) {
